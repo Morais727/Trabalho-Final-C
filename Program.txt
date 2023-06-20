@@ -1,0 +1,355 @@
+using System;
+using System.Collections;
+using System.Collections.Specialized;
+
+public interface Cell
+{
+    void Display();
+}
+
+public class Jewel : Cell
+{
+    public string color;
+
+    public Jewel(string color)
+    {
+        this.color = color;
+    }
+
+    public void Display()
+    {
+        Console.Write(color);
+    }
+}
+public class Life : Cell
+{
+    public void Display()
+    {
+        Console.Write(" @ ");
+    }
+}
+
+public class Scoreboard 
+{
+    private Cell[,] cells;
+
+    public int Rows1 { get; }
+    public int Columns1 { get; }
+
+    public Scoreboard(int rows, int columns)
+    {
+        Rows1 = rows;
+        Columns1 = columns;
+        cells = new Cell[rows, columns];
+    }
+
+    public void SetCell1(int row, int column, Cell cell)
+    {
+        cells[row, column] = cell;
+    }
+
+    public Cell GetCell1(int row, int column)
+    {
+        return cells[row, column];
+    }
+
+    public void DisplayScore()
+    {
+        for (int row = 0; row < cells.GetLength(0); row++)
+        {
+            for (int column = 0; column < cells.GetLength(1); column++)
+            {
+                Cell cell = cells[row, column];
+                cell.Display();
+            }
+            Console.WriteLine();
+        }
+    }
+}
+
+ 
+public class Obstacle : Cell
+{
+    private string type;
+
+    public Obstacle(string type)
+    {
+        this.type = type;
+    }
+
+    public void Display()
+    {
+        Console.Write(type);
+    }
+}
+
+public class Empty : Cell
+{
+    public void Display()
+    {
+        Console.Write(" -- ");
+    }
+}
+
+public class Map
+{
+    private Cell[,] cells;
+
+    public int Rows { get; }
+    public int Columns { get; }
+
+    public Map(int rows, int columns)
+    {
+        Rows = rows;
+        Columns = columns;
+        cells = new Cell[rows, columns];
+    }
+
+    public void SetCell(int row, int column, Cell cell)
+    {
+        cells[row, column] = cell;
+    }
+
+    public Cell GetCell(int row, int column)
+    {
+        return cells[row, column];
+    }
+
+    public void DisplayMap()
+    {
+        for (int row = 0; row < cells.GetLength(0); row++)
+        {
+            for (int column = 0; column < cells.GetLength(1); column++)
+            {
+                Cell cell = cells[row, column];
+                cell.Display();
+            }
+            Console.WriteLine();
+        }
+    }
+}
+
+public class Robot : Cell
+{
+    public int currentLife; // Vida atual do robô 
+    public int currentRow; // Posição atual do robô (linha)
+    public int currentColumn; // Posição atual do robô (coluna)
+    private Map gameMap; // Referência ao mapa
+    private List<Jewel> bagJewels; // Bag armazena as jóias coletadas
+    
+
+
+    public Robot(Map map, int initialRow, int initialColumn)
+    {
+        gameMap = map;
+        currentRow = initialRow;
+        currentColumn = initialColumn;
+        map.SetCell(currentRow, currentColumn, this);
+        bagJewels = new List<Jewel>();
+    }
+    
+    public void Display()
+    {
+        Console.Write(" ME ");
+    }
+
+
+
+    public void MoveUp()
+    {
+        int newRow = currentRow - 1;
+        if (IsValidMove(newRow, currentColumn))
+        {
+            MoveToCell(newRow, currentColumn);
+        }
+        else
+        {
+            Console.WriteLine("Comando inválido");
+        }
+    }
+
+    public void MoveDown()
+    {
+        int newRow = currentRow + 1;
+        if (IsValidMove(newRow, currentColumn))
+        {
+            MoveToCell(newRow, currentColumn);
+        }
+        else
+        {
+            Console.WriteLine("Comando inválido");
+        }
+    }
+
+    public void MoveLeft()
+    {
+        int newColumn = currentColumn - 1;
+        if (IsValidMove(currentRow, newColumn))
+        {
+            MoveToCell(currentRow, newColumn);
+        }
+        else
+        {
+            Console.WriteLine("Comando inválido");
+        }
+    }
+
+    public void MoveRight()
+    {
+        int newColumn = currentColumn + 1;
+        if (IsValidMove(currentRow, newColumn))
+        {
+            MoveToCell(currentRow, newColumn);
+        }
+        else
+        {
+            Console.WriteLine("Comando inválido");
+        }
+    }
+
+    public void GetJewel()
+    {
+        int[] directions = { 1, -1 }; // Direções possíveis: 1 para direita e -1 para esquerda
+
+        foreach (int direction in directions)
+        {
+            int newColumn = currentColumn + direction;
+            int newRow = currentRow;
+
+            if (Radar(newRow, newColumn) && gameMap.GetCell(newRow, newColumn) is Jewel jewel)
+            {
+                MoveToCell(newRow, newColumn);
+                CollectJewel(jewel);
+                return; // Sai do método após encontrar e mover-se para uma jóia
+            }
+        }
+
+        foreach (int direction in directions)
+        {
+            int newColumn = currentColumn;
+            int newRow = currentRow + direction;
+
+            if (Radar(newRow, newColumn) && gameMap.GetCell(newRow, newColumn) is Jewel jewel)
+            {
+                MoveToCell(newRow, newColumn);
+                CollectJewel(jewel);
+                return; // Sai do método após encontrar e mover-se para uma jóia
+            }
+        }
+        Console.WriteLine("Não tem jóia!");
+    }
+
+    private void CollectJewel(Jewel jewel)
+    {
+        //Collections Generics
+        bagJewels.Add(jewel);
+        Console.WriteLine("Jóia coletada: " + jewel.color);
+    }
+
+    private bool Radar(int row, int column)
+    {
+        return row >= 0 && row < gameMap.Rows && column >= 0 && column < gameMap.Columns;
+    }
+    private bool IsValidMove(int row, int column)
+    {
+        return Radar(row, column) && gameMap.GetCell(row, column) is Empty;
+    }
+
+    private void MoveToCell(int newRow, int newColumn)
+    {   
+        Console.Clear();
+        gameMap.SetCell(currentRow, currentColumn, new Empty());       
+        currentRow = newRow;
+        currentColumn = newColumn;
+        gameMap.SetCell(currentRow, currentColumn, this);
+        gameMap.DisplayMap();
+    }
+}
+
+public class JewelCollector
+{
+    public static void Main()
+    {
+        // Criar o objeto Map
+        Map gameMap = new Map(10, 10);
+
+        // Preencher todas as células com o valor "--"
+        for (int row = 0; row < 10; row++)
+        {
+            for (int column = 0; column < 10; column++)
+            {
+                gameMap.SetCell(row, column, new Empty());
+            }
+        }
+
+        // Criar o robô
+        Robot robot = new Robot(gameMap, 0, 0, 5);
+
+        // Definir as células do mapa
+        gameMap.SetCell(1, 9, new Jewel(" JR "));
+        gameMap.SetCell(8, 8, new Jewel(" JR "));
+        gameMap.SetCell(9, 1, new Jewel(" JG "));
+        gameMap.SetCell(7, 6, new Jewel(" JG "));
+        gameMap.SetCell(2, 1, new Jewel(" JB "));
+        gameMap.SetCell(9, 4, new Jewel(" JB "));
+
+        gameMap.SetCell(5, 9, new Obstacle(" $$ "));
+        gameMap.SetCell(3, 9, new Obstacle(" $$ "));
+        gameMap.SetCell(8, 3, new Obstacle(" $$ "));
+        gameMap.SetCell(2, 5, new Obstacle(" $$ "));
+        gameMap.SetCell(1, 4, new Obstacle(" $$ "));
+
+        int[,] waterPositions = 
+        {
+            { 5, 0 }, { 5, 1 }, { 5, 2 }, { 5, 3 }, { 5, 4 },
+            { 5, 5 }, { 5, 6 }
+        };
+        for (int i = 0; i < 6; i++)
+        {
+            int row = waterPositions[i, 0];
+            int column = waterPositions[i, 1];
+            gameMap.SetCell(row, column, new Obstacle(" ## "));
+        }
+
+        // Exibir o mapa
+        gameMap.DisplayMap();
+
+        bool running = true;
+
+        do
+        {
+            ConsoleKeyInfo keyInfo = Console.ReadKey(true); // true para não exibir a tecla pressionada
+
+            switch (keyInfo.Key)
+            {
+                case ConsoleKey.W:
+                    robot.MoveUp();
+                    break;
+
+                case ConsoleKey.A:
+                    robot.MoveLeft();
+                    break;
+
+                case ConsoleKey.S:
+                    robot.MoveDown();
+                    break;
+
+                case ConsoleKey.D:
+                    robot.MoveRight();
+                    break;
+
+                case ConsoleKey.G:
+                    robot.GetJewel();
+                    break;
+
+                case ConsoleKey.Q:
+                    running = false;
+                    break;
+
+                default:
+                    Console.WriteLine("Comando inválido");
+                    break;
+            }
+        } while (running);
+    }
+}
